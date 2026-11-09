@@ -26,13 +26,18 @@ SCENE_NAMES = [f"S{s}_{v}.jpg" for s in (1, 2) for v in ("front", "left", "right
 TODO: Task 2: fill in the object names (same as your Object Mapping sheet).
 They are drawn as labels on the bounding boxes.
 """
-OBJECT_NAMES = {"O1": "", "O2": "", "O3": "", "O4": ""}
+OBJECT_NAMES = {
+    "O1": "Drink Carton",
+    "O2": "Lotion Tube",
+    "O3": "Candy bag",
+    "O4": "Tape", 
+}
 
 # ---------------------------------------------------------------------------
 # Parameters you will tune
 # ---------------------------------------------------------------------------
-RATIO_TEST = 0.75      # Lowe's ratio for keeping a match
-MATCH_THRESHOLD = 15   # object is "present" if count >= this value
+RATIO_TEST = 0.60      # Lowe's ratio for keeping a match
+MATCH_THRESHOLD = 26   # object is "present" if count >= this value
 
 
 def load_image(path):
@@ -50,7 +55,7 @@ def detect_and_describe(image):
     Hint: OpenCV has built-in SIFT and ORB detectors that return keypoints and
     descriptors in a single call.
     """
-    raise NotImplementedError
+    return cv2.SIFT_create().detectAndCompute(image, None)
 
 
 def match_descriptors(desc_object, desc_scene):
@@ -60,7 +65,13 @@ def match_descriptors(desc_object, desc_scene):
     Hint: OpenCV has a brute-force matcher that can return the two nearest
     neighbours of each descriptor, which is what the ratio test needs.
     """
-    raise NotImplementedError
+    if (desc_object is None or desc_scene is None
+            or len(desc_object) == 0 or len(desc_scene) < 2):
+        return []
+    matcher = cv2.BFMatcher(cv2.NORM_L2)
+    neighbors = matcher.knnMatch(desc_object, desc_scene, k=2)
+    return [pair[0] for pair in neighbors
+            if len(pair) == 2 and pair[0].distance < RATIO_TEST * pair[1].distance]
 
 
 def is_present(good_matches):
@@ -68,7 +79,7 @@ def is_present(good_matches):
     TODO: Decide whether the object is present in the scene.
     Return True or False. Record the counts you see in Results.xlsx (Match Counts).
     """
-    raise NotImplementedError
+    return len(good_matches) >= MATCH_THRESHOLD
 
 
 def locate_object(kp_scene, good_matches):
@@ -81,7 +92,20 @@ def locate_object(kp_scene, good_matches):
     3. Return the bounding rectangle (x, y, w, h) of the remaining points, or None
        if too few points remain. OpenCV has a built-in function for this.
     """
-    raise NotImplementedError
+    if len(good_matches) < 4:
+        return None
+    points = np.array([kp_scene[m.trainIdx].pt for m in good_matches],
+                      dtype=np.float32)
+    center = np.median(points, axis=0)
+    distances = np.linalg.norm(points - center, axis=1)
+    median_distance = np.median(distances)
+    mad = np.median(np.abs(distances - median_distance))
+    radius = median_distance + 3.0 * 1.4826 * mad
+    reliable = np.unique(points[distances <= radius], axis=0)
+    if len(reliable) < 4:
+        return None
+    box = cv2.boundingRect(reliable)
+    return box if box[2] > 1 and box[3] > 1 else None
 
 
 def draw_box(scene_image, box, label=None):

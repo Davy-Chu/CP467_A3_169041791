@@ -1,6 +1,6 @@
-S1_front.jpg: none
-S1_left.jpg: none
+S1_front.jpg: O1, O2, O3
+S1_left.jpg: O1, O2
 S1_right.jpg: none
-S2_front.jpg: none
-S2_left.jpg: none
-S2_right.jpg: none
+S2_front.jpg: O1, O2, O3, O4
+S2_left.jpg: O1, O3
+S2_right.jpg: O1, O3, O4
