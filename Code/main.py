@@ -68,6 +68,7 @@ def match_descriptors(desc_object, desc_scene):
     if (desc_object is None or desc_scene is None
             or len(desc_object) == 0 or len(desc_scene) < 2):
         return []
+    
     matcher = cv2.BFMatcher(cv2.NORM_L2)
     neighbors = matcher.knnMatch(desc_object, desc_scene, k=2)
     return [pair[0] for pair in neighbors
